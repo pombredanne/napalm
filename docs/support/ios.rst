@@ -8,25 +8,56 @@ _____________
 IOS has no native API to play with, that's the reason why we used the Netmiko library to interact with it.
 Having Netmiko installed in your working box is a prerequisite.
 
-Notes on configuration comparing
-________________________________
+netmiko >= 1.0.0
 
-Using the ``compare_config()`` method, we'll have in return a list of commands that will be merged with the current configuration. 
-Since no configuration replacement's been implremented, this is the only comparison we can obtain.
+Full ios driver support requires configuration rollback on error::
 
-Notes on configuration merging
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Cisco IOS requirements for 'Configuration Rollback Confirmed Change' feature.
+    12.2(33)SRC
+    12.2(33)SB
+    12.4(20)T
+    12.2(33)SXI
 
-Merges are currently implemented by simply applying the the merge config line by line.
-As a result, merges are **not atomic**.
 
-Notes on configuration rollback
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Downgraded ios driver support (i.e. no auto rollback on configuration error for replace operation)::
 
-There is no magic here. Since IOS doesn't support any checkpoint config, what we can do is removing all the commands from the previous commit.
-The 'no' keyword will be added to each command and it will be sent again. The system is smart enough to understand parent/child commands.
+    Cisco IOS requirements for 'Configuration Replace and Configuration Rollback' feature.
+    12.3(7)T
+    12.2(25)S
+    12.3(14)T
+    12.2(27)SBC
+    12.2(31)SB2
+    12.2(33)SRA
+    12.2(33)SXH
+    12.2(33)SB
 
-Anyway, there might be some problems with commands like **description abc 123** since the command to remove would be **no description** but the system
-would send **no description abc 123** instead.
 
+Note, to disable auto rollback you must add the `auto_rollback_on_error=False` optional argument.
+
+
+
+Archive
+_______
+
+IOSDriver requires that the `archive` functionality be enabled to perform auto-rollback on error. Make sure it's enabled and set to local on device flash/hdd::
+
+    archive
+      path bootflash:archive
+      write-memory
+
+
+Configuration file
+------------------
+
+IOS requires config file to begin with a `version` eg. `15.0` and `end` marker at the end of the file. Otherwise IOS will reject `configure replace` operation.
+
+
+Notes
+_______
+
+* Will automatically enable secure copy ('ip scp server enable') on the network device. This is a configuration change.
+
+* During various operations, NAPALM ios driver will turn off the prompting for confirmations (`file prompt quiet`). It should re-enable prompting before exiting the device (`no file prompt quiet`).
+
+* The NAPALM-ios driver supports all Netmiko arguments as either standard arguments (hostname, username, password, timeout) or as optional_args (everything else).  
 

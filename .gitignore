@@ -56,3 +56,10 @@ docs/_build/
 .DS_Store
 
 env
+*.swp
+
+test/unit/test_devices.py
+
+.vagrant
+
+tags
